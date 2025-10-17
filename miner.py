@@ -6,6 +6,16 @@ from random import shuffle
 # треба по коорденатах
 # функція старт лишня
 
+colors = {
+    1: "#3498eb",
+    2: "#34eb4c",
+    3: "#a234eb",
+    4: "#eb9f34",
+    5: "#eb3468",
+    6: "#eb4634",
+    7: "#2f2f5e",
+    8: "#9c4fa8"
+}
 
 
 # window
@@ -55,8 +65,9 @@ def click(row, col):
         btn.config(text="*", bg="red")
         game_over()
     else:
-        btn.config(text=count_adjacent(row, col), bg="lightgray", state="disabled")
-
+        number = count_adjacent(row, col)
+        color = colors.get(number, "black")
+        btn.config(text=number, bg="lightgray", state="disabled", disabledforeground=color)
 
 def game_over():
     for (row_el, col_el), btn in buttons.items():
@@ -67,9 +78,9 @@ def game_over():
 
 def count_adjacent(row, col):
     count = 0
-    for i in range(row-1, row+2):
-        for j in range(col-1, col+2):
-            if (i, j) in random_mines:
+    for row_el in range(row-1, row+2):
+        for col_el in range(col-1, col+2):
+            if (row_el, col_el) in random_mines:
                 count += 1
     return count
 
