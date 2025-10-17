@@ -1,6 +1,6 @@
 import tkinter as tk
-import time
 from random import shuffle
+from datetime import datetime
 
 # словник кольорів, 8 це максимальна к-сть "сусідів" у кнопки
 colors = {
@@ -35,14 +35,22 @@ def create_bottoms():
 
 # функція для правої кнп миші щоб втановити або зняти прапорець 
 def right_click(event):
+    global flags_count
     curent_btn = event.widget
     if curent_btn["state"] == "normal":
         curent_btn["state"] = "disabled"
         curent_btn["text"] = "🚩"
+        curent_btn.config(disabledforeground="red") 
+        flags_count += 1
     elif curent_btn["text"] == "🚩":
         curent_btn["text"] = ""
         curent_btn["state"] = "normal"
+        flags_count -= 1
 
+    if 0 <= flags_count <= mines:
+        mines_left_label.config(text=f"Мін залишилось: {mines - flags_count}")
+    else:
+        return
 
 # випадкові числа для мін в зрізі вказаному користувачем
 def random_mines_coords():
@@ -51,15 +59,11 @@ def random_mines_coords():
     return set(btn_index[:mines])
 
 
-# присвоєння змінній рандомного списку
-random_mines = random_mines_coords()
-
-
 # логіка при натисканні на кнопку
 def click(row, col):
     btn = buttons[(row, col)]
     if (row, col) in random_mines:
-        btn.config(text="*", bg="red")
+        btn.config(text="💣", bg="red", disabledforeground="black")
         game_over()
     else:
         number = count_adjacent(row, col)
@@ -69,10 +73,24 @@ def click(row, col):
 
 # функція меню завепшення гри
 def game_over():
+    global start_time
     for (row_el, col_el), btn in buttons.items():
         if (row_el, col_el) in random_mines:
-            btn.config(text="*", bg="red")
+            btn.config(text="💣", bg="red", disabledforeground="black")
         btn.config(state="disabled")
+    start_time = None
+    game_over_mess()
+
+
+def game_over_mess():
+    global mins, secs
+    message = tk.Toplevel(window)
+    message.title("Game over")
+    message.geometry("250x200+200+200")
+    tk.Label(message, text="Гру завершено", font="sans 20 bold").grid(row=3, column=2, padx=15, pady=10)
+    tk.Button(message, text="Почати з початку", command=reload).grid(row=5, column=2, padx=15, pady=10) 
+    tk.Button(message, text="Закрити", command=lambda: message.destroy()).grid(row=6, column=2, padx=15, pady=10) 
+
 
 
 # лічильник для відображення ближайших мін
@@ -87,14 +105,16 @@ def count_adjacent(row, col):
 
 # функція меню reload, перезапуск гри з поправленим перестворенням мін і поля
 def reload():
-    global random_mines, buttons
+    global random_mines, buttons, start_time
     for child in window.winfo_children():
         child.destroy()
     buttons.clear()
     
     create_menu()
+    footer()
     random_mines = random_mines_coords()
     create_bottoms()
+    start_time = datetime.now()
 
 
 # функція меню settings
@@ -141,11 +161,46 @@ def create_menu():
     menubar.add_cascade(label="Menu", menu=settings_menu)
 
 
+def footer():
+    global timer_label, mines_left_label, start_time, flags_count
+
+    footer_bar = tk.Frame(window, bg="lightblue", height=20)
+    footer_bar.grid(row=row_in_win + 1, columnspan=column_in_win, padx=5, pady=5, sticky="ew")
+
+    timer_label = tk.Label(footer_bar, text="Час: 00:00", bg="lightblue", font="sans 12 bold")
+    timer_label.grid(row=0, column=0, padx=20)
+
+    mines_left_label = tk.Label(footer_bar, text=f"Мін залишилось: {mines}", bg="lightblue", font="sans 12 bold")
+    mines_left_label.grid(row=0, column=1, padx=20)
+
+    update_timer()
+
+
+def update_timer():
+    global after_id
+    if not start_time:
+        return
+    
+    elapsed = datetime.now() - start_time
+    seconds = int(elapsed.total_seconds())
+    mins, secs = divmod(seconds, 60)
+    timer_label.config(text=f"Час: {mins:02}:{secs:02}")
+    window.after(1000, update_timer)
+
+
 def main():
     create_menu()
+    footer()
     create_bottoms()
     window.mainloop()
 
+
+# присвоєння змінній рандомного списку
+random_mines = random_mines_coords()
+# збереження часу запуску
+start_time = datetime.now()
+
+flags_count = 0
 
 # ===
 # window
@@ -162,10 +217,14 @@ window.iconphoto(False, img_icon)
 
 # window
 
+# ===
+# продумати логіку перемоги у грі коли всі прапорці будуть на мінах
 
+# попробувати розібратись у алгоритмі відкривання пустих кнопок
 
+# ідею зупинки і запуску гри поки відкладу, мало часу
 
-
+# доробити обмеження на к-сть прапорців
 
 # ===
 
