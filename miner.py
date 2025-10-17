@@ -2,10 +2,15 @@ import tkinter as tk
 import time
 from random import shuffle
 
-# ===
+# по індексах тупо,
+# треба по коорденатах
+# функція старт лишня
+
+
+
 # window
 
-win_width = 1200
+win_width = 600
 win_height = 600
 
 window = tk.Tk()
@@ -19,74 +24,67 @@ window.iconphoto(False, img_icon)
 # змінні для к-сті кнопок на полі
 column_in_win = 10
 row_in_win = 10
-mines = 5
+mines = 25
+buttons = {}
 
 # func 
 
 
 #розміщення кнопок на полі
 def create_bottoms():
-    for el_row in range(row_in_win):
-        for el_col in range(column_in_win):
-            btn = buttons[el_row][el_col]
-            btn.grid(row=el_row, column=el_col)
-
-
-def start():
-    create_bottoms()
-    window.mainloop()
+    for row_el in range(row_in_win):
+        for col_el in range(column_in_win):
+            btn = tk.Button(window, width=4, height=2, font="sans 12 bold", command=lambda row_el=row_el, col_el=col_el: click(row_el, col_el))
+            btn.grid(row=row_el, column=col_el)
+            buttons[(row_el, col_el)] = btn
 
 
 # випадкові числа для мін в зрізі вказаному користувачем
-def random_index_for_mines():
-    btn_index = list(range(1, column_in_win * row_in_win + 1))
+def random_mines_coords():
+    btn_index = [(row, col) for row in range(row_in_win) for col in range(column_in_win)]
     shuffle(btn_index)
-    return btn_index[:mines]
-        
-        
-# перетворити кнопку на бомбу
-def is_mine():
-    pass
+    return set(btn_index[:mines])
+
+# присвоєння змінній рандомного списку
+random_mines = random_mines_coords()
+
+
+def click(row, col):
+    btn = buttons[(row, col)]
+    if (row, col) in random_mines:
+        btn.config(text="*", bg="red")
+        game_over()
+    else:
+        btn.config(text=count_adjacent(row, col), bg="lightgray", state="disabled")
+
+
+def game_over():
+    for (row_el, col_el), btn in buttons.items():
+        if (row_el, col_el) in random_mines:
+            btn.config(text="*", bg="red")
+        btn.config(state="disabled")
+
+
+def count_adjacent(row, col):
+    count = 0
+    for i in range(row-1, row+2):
+        for j in range(col-1, col+2):
+            if (i, j) in random_mines:
+                count += 1
+    return count
 
 
 def main():
-    start()
+    create_bottoms()
+    window.mainloop()
 
-
-# розміщення бомб
-def insert_mines():
-    pass
 
 # ===
 
 
 
-# створення вкладеного списку для кнопок
-buttons = []
-count = 1
-num_of_btn = False
-index_mines = random_index_for_mines()
-print(index_mines)
-for el_row in range(row_in_win):
-    temp = []
-    for el_col in range(column_in_win):
-        if count in index_mines:
-            num_of_btn = True
-            btn = tk.Button(window,text=f"{el_row}, {el_col}, #{count}, {num_of_btn}" , width=10, font='sans-serif 12 bold', bg="red")
-            temp.append(btn)
-            count += 1
-        else:
-            num_of_btn = False
-            btn = tk.Button(window,text=f"{el_row}, {el_col}, #{count}, {num_of_btn}" , width=10, font='sans-serif 12 bold')
-            temp.append(btn)
-            count += 1
-    buttons.append(temp)
 
-# грід кнопок на полі def create_bottoms()
-# for el_row in range(row_in_win):
-#     for el_col in range(column_in_win):
-#         btn = buttons[el_row][el_col]
-#         btn.grid(row=el_row, column=el_col)
+
 
 
 # ===
