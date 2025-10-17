@@ -2,10 +2,7 @@ import tkinter as tk
 import time
 from random import shuffle
 
-# по індексах тупо,
-# треба по коорденатах
-# функція старт лишня
-
+# словник кольорів, 8 це максимальна к-сть "сусідів" у кнопки
 colors = {
     1: "#3498eb",
     2: "#34eb4c",
@@ -16,8 +13,6 @@ colors = {
     7: "#2f2f5e",
     8: "#9c4fa8"
 }
-
-
 
 
 # змінні для к-сті кнопок на полі
@@ -35,6 +30,18 @@ def create_bottoms():
             btn = tk.Button(window, width=4, height=2, font="sans 12 bold", command=lambda row_el=row_el, col_el=col_el: click(row_el, col_el))
             btn.grid(row=row_el, column=col_el)
             buttons[(row_el, col_el)] = btn
+            btn.bind("<Button-3>", right_click) # event, function
+
+
+# функція для правої кнп миші щоб втановити або зняти прапорець 
+def right_click(event):
+    curent_btn = event.widget
+    if curent_btn["state"] == "normal":
+        curent_btn["state"] = "disabled"
+        curent_btn["text"] = "🚩"
+    elif curent_btn["text"] == "🚩":
+        curent_btn["text"] = ""
+        curent_btn["state"] = "normal"
 
 
 # випадкові числа для мін в зрізі вказаному користувачем
@@ -48,6 +55,7 @@ def random_mines_coords():
 random_mines = random_mines_coords()
 
 
+# логіка при натисканні на кнопку
 def click(row, col):
     btn = buttons[(row, col)]
     if (row, col) in random_mines:
@@ -57,8 +65,9 @@ def click(row, col):
         number = count_adjacent(row, col)
         color = colors.get(number, "black")
         btn.config(text=number, bg="lightgray", state="disabled", disabledforeground=color)
+        
 
-
+# функція меню завепшення гри
 def game_over():
     for (row_el, col_el), btn in buttons.items():
         if (row_el, col_el) in random_mines:
@@ -66,6 +75,7 @@ def game_over():
         btn.config(state="disabled")
 
 
+# лічильник для відображення ближайших мін
 def count_adjacent(row, col):
     count = 0
     for row_el in range(row-1, row+2):
@@ -75,6 +85,7 @@ def count_adjacent(row, col):
     return count
 
 
+# функція меню reload, перезапуск гри з поправленим перестворенням мін і поля
 def reload():
     global random_mines, buttons
     for child in window.winfo_children():
@@ -86,6 +97,7 @@ def reload():
     create_bottoms()
 
 
+# функція меню settings
 def settings_win():
     win_settings = tk.Toplevel(window)
     win_settings.title("Налаштування")
@@ -118,6 +130,7 @@ def change_setting(row_in_win_entry, column_in_win_entry, mines_entry):
     reload()
 
 
+# функція створення меню
 def create_menu():
     menubar = tk.Menu(window)
     window.config(menu=menubar)
