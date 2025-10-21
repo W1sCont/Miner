@@ -18,7 +18,7 @@ colors = {
 # змінні для к-сті кнопок на полі
 column_in_win = 10
 row_in_win = 10
-mines = 25
+mines = 2
 buttons = {}
 
 # func 
@@ -37,20 +37,23 @@ def create_bottoms():
 def right_click(event):
     global flags_count
     curent_btn = event.widget
+    
     if curent_btn["state"] == "normal":
-        curent_btn["state"] = "disabled"
-        curent_btn["text"] = "🚩"
-        curent_btn.config(disabledforeground="red") 
-        flags_count += 1
+        
+        if flags_count < mines:
+            curent_btn["state"] = "disabled"
+            curent_btn["text"] = "🚩"
+            curent_btn.config(disabledforeground="red")
+            flags_count += 1
+            mines_left_label.config(text=f"Мін залишилось: {mines - flags_count}")
+            check_win()
+            
     elif curent_btn["text"] == "🚩":
         curent_btn["text"] = ""
         curent_btn["state"] = "normal"
         flags_count -= 1
-
-    if 0 <= flags_count <= mines:
         mines_left_label.config(text=f"Мін залишилось: {mines - flags_count}")
-    else:
-        return
+
 
 # випадкові числа для мін в зрізі вказаному користувачем
 def random_mines_coords():
@@ -66,12 +69,60 @@ def click(row, col):
         btn.config(text="💣", bg="red", disabledforeground="black")
         game_over()
     else:
-        number = count_adjacent(row, col)
-        color = colors.get(number, "black")
-        btn.config(text=number, bg="lightgray", state="disabled", disabledforeground=color)
-        
+        # number = count_adjacent(row, col)
+        # if number != 0:
+        #     color = colors.get(number, "black")
+        #     btn.config(text=number, bg="lightgray", state="disabled", disabledforeground=color, relief=tk.SUNKEN)
+        # else:
+        #     color = colors.get(number, "black")
+        #     btn.config(text="", bg="lightgray", state="disabled", disabledforeground=color, relief=tk.SUNKEN)
+        open_zero_btn(row, col)
 
-# функція меню завепшення гри
+    print(count_adjacent(row, col))
+
+
+# авто відкривання пустих кнопок через чергу найближчих пустих
+def open_zero_btn(row, col):
+    memory = [(row, col)]
+    visited = set()
+
+    while memory:
+        current_row, current_col = memory.pop()
+                
+        if (current_row, current_col) in visited:
+            continue
+                
+        
+        visited.add((current_row, current_col))
+        current_btn = buttons[(current_row, current_col)]
+        if  not current_btn.config(text="💣"):
+                
+            current_number = count_adjacent(current_row, current_col)
+
+            color = colors.get(current_number, "black")
+            current_btn.config(text=current_number, bg="lightgray", state="disabled", disabledforeground=color, relief=tk.SUNKEN)
+                
+            if current_number == 0:
+                current_btn.config(text="", bg="lightgray", state="disabled", relief=tk.SUNKEN)
+                    
+                for dx in [-1, 0, 1]:
+                    for dy in [-1, 0, 1]:
+                        if not abs(dx - dy) == 1: 
+                            continue
+                            
+                        new_row = current_row + dx
+                        new_col = current_col + dy
+                        print(new_row, new_col)
+                            
+
+                        if 0 <= new_row < row_in_win and 0 <= new_col < column_in_win:
+                            if (new_row, new_col) not in visited:
+                                next_btn = buttons[(new_row, new_col)]
+                                if next_btn["state"] == "normal":
+                                    memory.append((new_row, new_col))
+                
+                    
+# функція меню завершення гри
 def game_over():
     global start_time
     for (row_el, col_el), btn in buttons.items():
@@ -83,14 +134,13 @@ def game_over():
 
 
 def game_over_mess():
-    global mins, secs
+    
     message = tk.Toplevel(window)
     message.title("Game over")
     message.geometry("250x200+200+200")
     tk.Label(message, text="Гру завершено", font="sans 20 bold").grid(row=3, column=2, padx=15, pady=10)
     tk.Button(message, text="Почати з початку", command=reload).grid(row=5, column=2, padx=15, pady=10) 
     tk.Button(message, text="Закрити", command=lambda: message.destroy()).grid(row=6, column=2, padx=15, pady=10) 
-
 
 
 # лічильник для відображення ближайших мін
@@ -105,7 +155,7 @@ def count_adjacent(row, col):
 
 # функція меню reload, перезапуск гри з поправленим перестворенням мін і поля
 def reload():
-    global random_mines, buttons, start_time
+    global random_mines, buttons, start_time, flags_count
     for child in window.winfo_children():
         child.destroy()
     buttons.clear()
@@ -113,6 +163,7 @@ def reload():
     create_menu()
     footer()
     random_mines = random_mines_coords()
+    flags_count = 0
     create_bottoms()
     start_time = datetime.now()
 
@@ -188,6 +239,48 @@ def update_timer():
     window.after(1000, update_timer)
 
 
+# реалізація перевірки перемоги
+def check_win():
+    if flags_count == mines:
+        correct_flags = 0
+        for dx in range(row_in_win):
+            for dy in range(column_in_win):
+                btn = buttons[(dx, dy)]
+
+                if btn["text"] == "🚩" and (dx, dy) in random_mines:
+                    correct_flags += 1
+        
+        if correct_flags == mines:
+            game_win()
+            return True
+    return False
+
+
+# функція обробки перемоги
+def game_win():
+    global random_mines, flags_count
+
+    for (row_el, col_el), btn in buttons.items():
+        if (row_el, col_el) in random_mines:
+            btn["text"] = "🚩"
+            btn["state"] = "disabled"
+            btn.config(disabledforeground="green", bg="lightgreen")
+        btn.config(state="disabled")
+
+    random_mines = random_mines_coords()
+    flags_count = 0
+    game_win_mess()
+
+
+def game_win_mess():
+    message = tk.Toplevel(window)
+    message.title("Перемога!")
+    message.geometry("250x200+200+200")
+    tk.Label(message, text="Ви виграли! 🎉", font="sans 20 bold").grid(row=3, column=3, padx=15, pady=10)
+    tk.Button(message, text="Почати з початку", command=reload).grid(row=5, column=3, padx=15, pady=10) 
+    tk.Button(message, text="Закрити", command=lambda: message.destroy()).grid(row=6, column=3, padx=15, pady=10) 
+
+
 def main():
     create_menu()
     footer()
@@ -218,13 +311,16 @@ window.iconphoto(False, img_icon)
 # window
 
 # ===
-# продумати логіку перемоги у грі коли всі прапорці будуть на мінах
 
-# попробувати розібратись у алгоритмі відкривання пустих кнопок
+# продумати логіку перемоги у грі коли всі прапорці будуть на мінах
 
 # ідею зупинки і запуску гри поки відкладу, мало часу
 
+# добавити авто відкривання пустих кнопок
+
 # доробити обмеження на к-сть прапорців
+
+# добавити ефект кнопки після натискання
 
 # ===
 
