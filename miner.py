@@ -1,6 +1,5 @@
 import tkinter as tk
 from random import shuffle
-from datetime import datetime
 
 # словник кольорів, 8 це максимальна к-сть "сусідів" у кнопки
 colors = {
@@ -124,12 +123,10 @@ def open_zero_btn(row, col):
                     
 # функція меню завершення гри
 def game_over():
-    global start_time
     for (row_el, col_el), btn in buttons.items():
         if (row_el, col_el) in random_mines:
             btn.config(text="💣", bg="red", disabledforeground="black")
         btn.config(state="disabled")
-    start_time = None
     game_over_mess()
 
 
@@ -155,7 +152,7 @@ def count_adjacent(row, col):
 
 # функція меню reload, перезапуск гри з поправленим перестворенням мін і поля
 def reload():
-    global random_mines, buttons, start_time, flags_count
+    global random_mines, buttons, flags_count
     for child in window.winfo_children():
         child.destroy()
     buttons.clear()
@@ -165,7 +162,6 @@ def reload():
     random_mines = random_mines_coords()
     flags_count = 0
     create_bottoms()
-    start_time = datetime.now()
 
 
 # функція меню settings
@@ -213,30 +209,13 @@ def create_menu():
 
 
 def footer():
-    global timer_label, mines_left_label, start_time, flags_count
+    global mines_left_label, flags_count
 
     footer_bar = tk.Frame(window, bg="lightblue", height=20)
     footer_bar.grid(row=row_in_win + 1, columnspan=column_in_win, padx=5, pady=5, sticky="ew")
 
-    timer_label = tk.Label(footer_bar, text="Час: 00:00", bg="lightblue", font="sans 12 bold")
-    timer_label.grid(row=0, column=0, padx=20)
-
     mines_left_label = tk.Label(footer_bar, text=f"Мін залишилось: {mines}", bg="lightblue", font="sans 12 bold")
     mines_left_label.grid(row=0, column=1, padx=20)
-
-    update_timer()
-
-
-def update_timer():
-    global after_id
-    if not start_time:
-        return
-    
-    elapsed = datetime.now() - start_time
-    seconds = int(elapsed.total_seconds())
-    mins, secs = divmod(seconds, 60)
-    timer_label.config(text=f"Час: {mins:02}:{secs:02}")
-    window.after(1000, update_timer)
 
 
 # реалізація перевірки перемоги
@@ -252,9 +231,7 @@ def check_win():
         
         if correct_flags == mines:
             game_win()
-            return True
-    return False
-
+        
 
 # функція обробки перемоги
 def game_win():
@@ -290,8 +267,6 @@ def main():
 
 # присвоєння змінній рандомного списку
 random_mines = random_mines_coords()
-# збереження часу запуску
-start_time = datetime.now()
 
 flags_count = 0
 
